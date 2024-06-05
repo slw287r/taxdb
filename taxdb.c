@@ -68,10 +68,37 @@ int main(int argc, char *argv[])
 		else if (c == ':') error("Missing option argument: -%c\n", opt.opt ? opt.opt : ':');
 		else error("Unknown option encountered\n");
 	}
+	if (argc - opt.ind >= 1)
+	{
+		tax = 1;
+		for (i = opt.ind; i < argc; ++i)
+		{
+			if (!strchr(argv[i], ','))
+			{
+				if (access(argv[i], R_OK))
+					kv_push(uint32_t, a, atoi(argv[i]));
+				else
+					ld_tids(argv[i], &a);
+			}
+			else
+			{
+				char *p, *q, *t = strdup(argv[i]);
+				p = q = t;
+				while ((p = strchr(p, ',')))
+				{
+					*p = '\0';
+					kv_push(uint32_t, a, atoi(q));
+					q = ++p;
+				}
+				kv_push(uint32_t, a, atoi(q));
+				free(t);
+			}
+		}
+	}
 	size_t sz = 0;
 	char *line = NULL;
 	if (!tax)
-		error("Taxonomy ID is required via -t\n");
+		error("At least one taxonomy ID is required\n");
 	if (access(btd, R_OK) || access(bti, R_OK))
 		error("Error accessing taxdb file [%s] or [%s]\n", btd, bti);
 	fp = fopen(btd, "r");
@@ -218,22 +245,20 @@ static void horiz(const int _n)
 
 static void usage()
 {
-	int w = 49;
+	int w = 58;
 	horiz(w);
-	puts("Get names by taxid from NCBI taxdb");
+	puts("\e[1m            Get names by taxid from NCBI taxdb\e[0m");
 	horiz(w);
-	printf("Usage: \e[31m%s\e[0m \e[2m[options]\e[0m\n", __progname);
-	puts("  -d FILE taxdb.btd file");
-	puts("  -i FILE taxdb.bti file");
-	puts("  -t INT\e[2m,INT,...\e[0m  taxid(s) to query or");
-	puts("          taxid list file, one per line");
-	puts("  -o FILE output file \e[2m[stdout]\e[0m");
+	printf("\e[1mUsage\e[0m: \e[31m%s\e[0m \e[2m[options]\e[0m \e[35m<txid>\e[0m \e[2m<txid>\e[0m\n", __progname);
+	printf("  -d FILE         taxdb.btd file\n");
+	printf("  -i FILE         taxdb.bti file\n");
+	puts("  -t INT\e[2m,INT,...\e[0m  taxid(s) to query or taxid list file");
+	puts("  -o FILE         output file \e[2m[stdout]\e[0m");
 	putchar('\n');
-	puts("  -h      print help");
-	puts("  -v      print version");
+	puts("  -h              print help");
+	puts("  -v              print version");
 	putchar('\n');
-	puts("taxdb:");
-	puts("ftp://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz");
+	puts("\e[1mNotes\e[0m:  ftp://ftp.ncbi.nlm.nih.gov/blast/db/taxdb.tar.gz");
 	horiz(w);
 	exit(1);
 }
